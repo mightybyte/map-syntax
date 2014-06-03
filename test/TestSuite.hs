@@ -51,7 +51,8 @@ skipDup = assertEqual "Failed to reject duplicate entry"
 nestingTests :: [Test]
 nestingTests = [testCase "Simple nested insertion failure" nestedInsFail
                ,testCase "Simple nested insertion failure - try to print"
-                nestedInsFailUsage]
+                nestedInsFailUsage
+               ,testCase "Nested duplicate entry overwrite failed" nestedDup]
 
 -- |This test fails (no exception)
 nestedInsFail :: IO ()
@@ -79,7 +80,28 @@ baz = do
   bar
   "extra" #! 1234
 
+nestedDup :: IO ()
+nestedDup = assertEqual "Failed to overwrite nested do block duplicate"
+            (toDataMap bazOver)
+            (M.fromList [("java",4),("haskell",11),("extra",1234),("c",6)])
 
+fooOver :: MapSyntax String Int
+fooOver = do
+  "java" ## 4
+  "haskell" ## 12
+
+barOver :: MapSyntax String Int
+barOver = do
+  "c"  ## 6
+  "haskell" ## 11
+
+bazOver :: MapSyntax String Int
+bazOver = do
+  fooOver
+  barOver
+  "extra" ## 1234
+
+  
 ------------------------------------------------------------------------------
 -- |Utilities
 expectException :: IO a -> IO ()

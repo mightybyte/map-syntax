@@ -3,7 +3,7 @@
 set -e
 
 if [ -z "$DEBUG" ]; then
-export DEBUG="testsuite"
+  export DEBUG="testsuite"
 fi
 
 SUITE=./dist/build/testsuite/testsuite
@@ -40,7 +40,7 @@ for m in $EXCLUDES; do
     EXCL="$EXCL --exclude=$m"
 done
 
-hpc markup $EXCL --destdir=$DIR testsuite #  >/dev/null 2>&1
+hpc markup $EXCL --destdir=$DIR testsuite # >/dev/null 2>&1
 
 rm -f testsuite.tix
 

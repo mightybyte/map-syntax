@@ -29,7 +29,7 @@ module Data.Map.Syntax where
 
 ------------------------------------------------------------------------------
 import           Control.Applicative
-import           Control.Monad.State (State, MonadState, execState, modify, put)
+import           Control.Monad.State
 import           Data.Monoid
 ------------------------------------------------------------------------------
 
@@ -72,8 +72,13 @@ type MapSyntax k v = MapSyntaxM k v ()
 
 
 ------------------------------------------------------------------------------
-add :: MonadState [ItemRep k v] m => DupStrat -> k -> v -> m ()
-add strat k v = modify (++  [ItemRep strat k v])
+add :: DupStrat -> k -> v -> MapSyntax k v
+add strat k v = add' [ItemRep strat k v]
+
+
+------------------------------------------------------------------------------
+add' :: [ItemRep k v] -> MapSyntax k v
+add' irs = modify (++ irs)
 
 
 ------------------------------------------------------------------------------
@@ -136,14 +141,16 @@ execMapSyntax ms = execState (unMapSyntax ms) mempty
 ------------------------------------------------------------------------------
 -- | Maps a function over all the keys.
 mapK :: (k1 -> k2) -> MapSyntaxM k1 v a -> MapSyntax k2 v
-mapK f = MapSyntaxM . put .
-    map (\ir -> ir { irKey = f (irKey ir) }) . execMapSyntax
+mapK f ms = add' items
+  where
+    items = map (\ir -> ir { irKey = f (irKey ir) }) $ execMapSyntax ms
 
 
 ------------------------------------------------------------------------------
 -- | Maps a function over all the values.
 mapV :: (v1 -> v2) -> MapSyntaxM k v1 a -> MapSyntax k v2
-mapV f = MapSyntaxM . put .
-    map (\ir -> ir { irVal = f (irVal ir) }) . execMapSyntax
+mapV f ms = add' items
+  where
+    items = map (\ir -> ir { irVal = f (irVal ir) }) $ execMapSyntax ms
 
 

@@ -26,21 +26,24 @@ insTests = [testCase "Insert overwrite" overDup
 
 overDup :: IO ()
 overDup = assertEqual "Failed to overwrite duplicate entry"
-          (runMapSyntax M.member M.insert m)
-          (M.fromList [("firstName","Egon")])
+          (runMapSyntax M.lookup M.insert m)
+          (Right $ M.fromList [("firstName","Egon")])
   where m = do
           "firstName" ## "Peter"
           "firstName" ## "Egon"
 
 failDup :: IO ()
-failDup = expectException . return . toDataMap $ do
-  "firstName" #! "Peter"
-  "firstName" #! "Egon"
+failDup = assertEqual "Failed to overwrite duplicate entry"
+          (runMapSyntax M.lookup M.insert m)
+          (Left ["firstName"])
+  where m = do
+          "firstName" #! "Peter"
+          "firstName" #! "Egon"
 
 skipDup :: IO ()
 skipDup = assertEqual "Failed to reject duplicate entry"
-          (runMapSyntax M.member M.insert m)
-          (M.fromList [("firstName","Peter")])
+          (runMapSyntax M.lookup M.insert m)
+          (Right $ M.fromList [("firstName","Peter")])
   where m = do
           "firstName" #? "Peter"
           "firstName" #? "Egon"
@@ -83,7 +86,7 @@ baz = do
 nestedDup :: IO ()
 nestedDup = assertEqual "Failed to overwrite nested do block duplicate"
             (toDataMap bazOver)
-            (M.fromList [("java",4),("haskell",11),("extra",1234),("c",6)])
+            (Right $ M.fromList [("java",4),("haskell",11),("extra",1234),("c",6)])
 
 fooOver :: MapSyntax String Int
 fooOver = do
@@ -111,8 +114,8 @@ expectException m = do
     Left (z :: E.SomeException) -> length (show z) `seq` return ()
     Right _ -> assertFailure "Expected exception, didn't get it."
   
-toDataMap :: (Show k, Ord k) => MapSyntax k v -> M.Map k v
-toDataMap = runMapSyntax M.member M.insert
+toDataMap :: (Show k, Ord k) => MapSyntax k v -> Either [k] (M.Map k v)
+toDataMap = runMapSyntax M.lookup M.insert
 
 
 ------------------------------------------------------------------------------

@@ -123,7 +123,7 @@ infixr 0 #?
 runMapSyntax
     :: (Monoid map)
     => (k -> map -> Maybe v)
-    -- ^ Function that tests whether the key exists in the map
+    -- ^ Function that gets a key's value
     -> (k -> v -> map -> map)
     -- ^ Function to force-insert a key-value pair into the map
     -> MapSyntaxM k v a

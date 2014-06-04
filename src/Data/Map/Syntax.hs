@@ -24,7 +24,20 @@ Here's an example:
 
 -}
 
-module Data.Map.Syntax where
+module Data.Map.Syntax
+  ( DupStrat(..)
+  , ItemRep(..)
+  , MapSyntaxM
+  , MapSyntax
+  , add
+  , add'
+  , (##)
+  , (#!)
+  , (#?)
+  , runMapSyntax
+  , mapK
+  , mapV
+  ) where
 
 
 ------------------------------------------------------------------------------
@@ -55,7 +68,7 @@ type MapRep k v = [ItemRep k v]
 ------------------------------------------------------------------------------
 -- | A monad providing convenient syntax for defining maps.
 newtype MapSyntaxM k v a = MapSyntaxM { unMapSyntax :: State (MapRep k v) a }
-  deriving (Functor, Applicative, Monad, MonadState (MapRep k v))
+  deriving (Functor, Applicative, Monad)
 
 
 ------------------------------------------------------------------------------
@@ -78,7 +91,7 @@ add strat k v = add' [ItemRep strat k v]
 
 ------------------------------------------------------------------------------
 add' :: [ItemRep k v] -> MapSyntax k v
-add' irs = modify (++ irs)
+add' irs = MapSyntaxM $ modify (++ irs)
 
 
 ------------------------------------------------------------------------------

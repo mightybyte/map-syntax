@@ -24,7 +24,7 @@ Here's an example:
 
 -}
 
-module Data.Map.Syntax where
+module Data.Map.FuncSyntax where
 
 
 ------------------------------------------------------------------------------
@@ -36,13 +36,15 @@ import           Data.Monoid
 
 ------------------------------------------------------------------------------
 -- | Strategy to use for duplicates
-data DupStrat = Replace | Ignore | Error
+--
+-- If we use functions here, then it's not possible to implement mapK and mapV
+type DupStrat k v = k -> v -> v -> Either k v
 
 
 ------------------------------------------------------------------------------
 -- | Representation of an indivdual item in a map
 data ItemRep k v = ItemRep
-    { irStrat :: DupStrat
+    { irStrat :: DupStrat k v
     , irKey :: k
     , irVal :: v
     }
@@ -71,16 +73,25 @@ instance Monoid (MapSyntax k v) where
 type MapSyntax k v = MapSyntaxM k v ()
 
 
-------------------------------------------------------------------------------
-add :: MonadState [ItemRep k v] m => DupStrat -> k -> v -> m ()
-add strat k v = modify (++  [ItemRep strat k v])
+replaceDup :: DupStrat k v
+replaceDup _ _ v2 = Right v2
+
+ignoreDup :: DupStrat k v
+ignoreDup _ v1 _ = Right v1
+
+errDup :: DupStrat k v
+errDup k _ _ = Left k
+
+
+addWith :: DupStrat k v -> k -> v -> MapSyntax k v
+addWith strat k v = modify (++ [ItemRep strat k v])
 
 
 ------------------------------------------------------------------------------
 -- | Forces an entry to be added.  If the key already exists, its value is
 -- overwritten.
 (##) :: k -> v -> MapSyntax k v
-(##) = add Replace
+(##) = addWith replaceDup
 infixr 0 ##
 
 
@@ -89,14 +100,14 @@ infixr 0 ##
 -- error message.  This may be useful if name collisions are bad and you want
 -- to crash when they occur.
 (#!) :: k -> v -> MapSyntax k v
-(#!) = add Error
+(#!) = addWith errDup
 infixr 0 #!
 
 
 ------------------------------------------------------------------------------
 -- | Inserts into the map only if the key does not already exist.
 (#?) :: k -> v -> MapSyntax k v
-(#?) = add Ignore
+(#?) = addWith ignoreDup
 infixr 0 #?
 
 
@@ -118,14 +129,13 @@ runMapSyntax lookupEntry forceIns ms =
     res = foldl f (mempty, mempty) $ execState (unMapSyntax ms) mempty
     f accum@(es,m) ir@ItemRep{..} =
       case lookupEntry irKey m of
-        Just v1 -> replace accum ir
+        Just v1 -> replace accum v1 ir
         Nothing -> (es, forceIns irKey irVal m)
 
-    replace (es,m) ItemRep{..} =
-      case irStrat of
-        Replace -> (es, forceIns irKey irVal m)
-        Ignore -> (es, m)
-        Error -> (es ++ [irKey], m)
+    replace (es,m) v1 ItemRep{..} =
+      case irStrat irKey v1 irVal of
+        Left k -> (es++[k], m)
+        Right v -> (es, forceIns irKey v m)
 
 
 ------------------------------------------------------------------------------
@@ -133,17 +143,24 @@ execMapSyntax :: MapSyntaxM k v a -> MapRep k v
 execMapSyntax ms = execState (unMapSyntax ms) mempty
 
 
+-- Can't write these because DupStrat is contravariant
+
 ------------------------------------------------------------------------------
 -- | Maps a function over all the keys.
-mapK :: (k1 -> k2) -> MapSyntaxM k1 v a -> MapSyntax k2 v
-mapK f = MapSyntaxM . put .
-    map (\ir -> ir { irKey = f (irKey ir) }) . execMapSyntax
+--mapK :: (k1 -> k2) -> MapSyntaxM k1 v a -> MapSyntax k2 v
+--mapK f = MapSyntaxM . put .
+--    map (\ir -> ir { irKey = f (irKey ir) }) . execMapSyntax
+--  where
+--    g ir = ir { irKey = f (irKey ir)
+--              , irStrat = h }
+--      where
+--        h k v2 v2 = irStrat (f k) v1 v2
 
 
 ------------------------------------------------------------------------------
 -- | Maps a function over all the values.
-mapV :: (v1 -> v2) -> MapSyntaxM k v1 a -> MapSyntax k v2
-mapV f = MapSyntaxM . put .
-    map (\ir -> ir { irVal = f (irVal ir) }) . execMapSyntax
+--mapV :: (v1 -> v2) -> MapSyntaxM k v1 a -> MapSyntax k v2
+--mapV f = MapSyntaxM . put .
+--    map (\ir -> ir { irVal = f (irVal ir) }) . execMapSyntax
 
 

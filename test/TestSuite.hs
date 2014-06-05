@@ -17,4 +17,3 @@ tests = [testGroup "Simple insertion testing" insTests
 ------------------------------------------------------------------------------
 main :: IO ()
 main = defaultMain tests
-

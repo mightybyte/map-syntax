@@ -55,6 +55,7 @@ Test-suite testsuite
   default-language: Haskell2010
   ghc-options: -fhpc
 
+  ghc-options: -Wall -fwarn-tabs -fhpc -O2
   build-depends:   
     base                       >= 4        && < 5,
     containers                 >= 0.3      && < 0.6,

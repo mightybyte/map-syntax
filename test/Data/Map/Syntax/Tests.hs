@@ -9,7 +9,7 @@ import Control.Monad
 import qualified Data.List as L
 import Data.Function (on)
 import qualified Data.Map as M
-import Data.Monoid (mempty)
+import Data.Monoid (mempty,mappend,(<>))
 import Test.Framework (defaultMain, testGroup, Test)
 import Test.Framework.Providers.HUnit (testCase)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
@@ -31,7 +31,14 @@ insTests =
   ,testProperty "Insert conditional from list" prop_syntaxMatchesNubCond
   ,testProperty "Insert error on dup from list" prop_syntaxMatchesNubErr]
 
+monoidLaws :: [Test]
+monoidLaws =
+  [testProperty "Left identity"  prop_leftId
+  ,testProperty "Right identity" prop_rightId
+  ,testProperty "Association"    prop_assoc
+  ]
 
+  
 ------------------------------------------------------------------------------
 -- |Simple tests of ##, #!, #?
 overDup :: IO ()
@@ -165,3 +172,16 @@ bazOver = do
   "extra" ## 1234
 
 
+------------------------------------------------------------------------------
+-- |Monoid Laws
+prop_leftId :: MapSyntax String Int -> Bool
+prop_leftId m = toDataMap (mempty <> m) == toDataMap m
+
+prop_rightId :: MapSyntax String Int -> Bool
+prop_rightId m = toDataMap (m <> mempty) == toDataMap m
+
+prop_assoc :: MapSyntax String Int
+              -> MapSyntax String Int
+              -> MapSyntax String Int
+              -> Bool
+prop_assoc a b c = toDataMap ((a <> b) <> c) == toDataMap (a <> (b <> c))

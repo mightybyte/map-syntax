@@ -27,7 +27,7 @@ Here's an example:
 module Data.Map.Syntax
   ( DupStrat(..)
   , ItemRep(..)
-  , MapSyntaxM
+  , MapSyntaxM(..)
   , MapSyntax
   , add
   , add'

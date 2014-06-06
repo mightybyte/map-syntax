@@ -165,5 +165,3 @@ mapV :: (v1 -> v2) -> MapSyntaxM k v1 a -> MapSyntax k v2
 mapV f ms = add' items
   where
     items = map (\ir -> ir { irVal = f (irVal ir) }) $ execMapSyntax ms
-
-

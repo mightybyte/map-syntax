@@ -4,20 +4,17 @@
 module Data.Map.Syntax.Tests where
 
 ------------------------------------------------------------------------------
-import qualified Control.Exception as E
-import Control.Monad
 import qualified Data.List as L
-import Data.Function (on)
+import           Data.Function (on)
 import qualified Data.Map as M
-import Data.Monoid (mempty)
-import Test.Framework (defaultMain, testGroup, Test)
-import Test.Framework.Providers.HUnit (testCase)
-import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.HUnit (assertEqual, assertFailure)
-import Test.QuickCheck (Arbitrary (arbitrary), Property, forAll)
+import           Data.Monoid (mempty,(<>))
+import           Test.Framework (Test)
+import           Test.Framework.Providers.HUnit (testCase)
+import           Test.Framework.Providers.QuickCheck2 (testProperty)
+import           Test.HUnit (assertEqual)
 
-import Data.Map.Syntax
-import Data.Map.Syntax.Util
+import           Data.Map.Syntax
+import           Data.Map.Syntax.Util (toDataMap,mkMapABC, mkMapDEF,mkMapAEF, ArbMapSyntax(..))
 
 
 ------------------------------------------------------------------------------
@@ -31,35 +28,39 @@ insTests =
   ,testProperty "Insert conditional from list" prop_syntaxMatchesNubCond
   ,testProperty "Insert error on dup from list" prop_syntaxMatchesNubErr]
 
+monoidLaws :: [Test]
+monoidLaws =
+  [testProperty "Left identity"  prop_leftId
+  ,testProperty "Right identity" prop_rightId
+  ,testProperty "Associativity"  prop_assoc
+  ]
 
+  
 ------------------------------------------------------------------------------
 -- |Simple tests of ##, #!, #?
 overDup :: IO ()
 overDup = assertEqual "Failed to overwrite duplicate entry"
-          (runMapSyntax M.lookup M.insert m)
-          (Right $ M.fromList [("firstName","Egon")])
-  where m = do
-          "firstName" ## "Peter"
-          "firstName" ## "Egon"
+          (toDataMap $ mkDupMap (##))
+          (Right $ M.fromList [("firstName","Egon") :: (String,String)])
 
 failDup :: IO ()
 failDup = assertEqual "Failed to overwrite duplicate entry"
-          (runMapSyntax M.lookup M.insert m)
-          (Left ["firstName"])
-  where m = do
-          "firstName" #! "Peter"
-          "firstName" #! "Egon"
+          (toDataMap $ mkDupMap (#!))
+          (Left [("firstName" :: String)])
 
 skipDup :: IO ()
 skipDup = assertEqual "Failed to reject duplicate entry"
-          (runMapSyntax M.lookup M.insert m)
+          (toDataMap $ mkDupMap (#?))
           (Right $ M.fromList [("firstName","Peter")])
-  where m = do
-          "firstName" #? "Peter"
-          "firstName" #? "Egon"
+
+mkDupMap :: (String -> String -> MapSyntax String String)
+            -> MapSyntax String String
+mkDupMap strat = do
+  "firstName" `strat` "Peter"
+  "firstName" `strat` "Egon"
+
 
 ------------------------------------------------------------------------------
--- |Properties of ## (Overwrite with newest)
 prop_syntaxMatchesNubOver :: [(String,Int)] -> Bool
 prop_syntaxMatchesNubOver pairs = Right revNubMap == (toDataMap mSyntax)
   where mSyntax   = mapM_ (\(k,v) -> (k ## v)) pairs
@@ -75,8 +76,6 @@ prop_syntaxMatchesNubCond pairs = Right nubMap == (toDataMap mSyntax)
 prop_syntaxMatchesNubErr :: [(String,Int)] -> Bool
 prop_syntaxMatchesNubErr pairs =
   let mMap = toDataMap $ mapM_ (\(k,v) -> (k #! v)) pairs
---      keys    = map fst pairs
---      dupKeys = dups keys
   in if   pairs == L.nubBy ((==) `on` fst) pairs
      then mMap == (Right . M.fromList $ pairs)
      else case mMap of
@@ -90,78 +89,121 @@ prop_syntaxMatchesNubErr pairs =
 -- |Tests for #! when do blocks are nested
 nestingTests :: [Test]
 nestingTests =
-  [testCase "Nested error dups" nestedErr
-  ,testCase "Nested error dups mapK" nestedErrMapK
-  ,testCase "Nester error dups mapV" nestedErrMapV
-  ,testCase "Nested overwrite dups" nestedOver]
+  [testCase "Nested error dups"          nestedErr
+  ,testCase "Nested error dups mapK"     nestedErrMapK
+  ,testCase "Nester error dups mapV"     nestedErrMapV
+  ,testCase "Nested overwrite dups"      nestedOver
+  ,testCase "Nested overwrite dups mapK" nestedOverMapK
+  ,testCase "Nested overwrite dups mapV" nestedOverMapV
+  ,testCase "Nested ignore dups mixed"   nestedIgnoreMix
+  ,testCase "Nested complex pass"        nestedComplex
+  ,testCase "Nested complex error"       nestedComplexErr]
 
 
 nestedErr :: IO ()
 nestedErr = assertEqual "Failed to error on duplicates across do blocks"
-            (toDataMap bazErr)
-            (Left ["haskell"])
+            (Left ['E','F'])
+            (toDataMap $ do {mkMapDEF (#!); mkMapAEF (#!)})
 
 nestedErrMapK :: IO ()
 nestedErrMapK = assertEqual "Failed to error on mapK'ed dups across blocks"
-                (toDataMap bazErrMapK)
-                (Left ["haskella"])
+                (Left ['B'])
+                (toDataMap $ do
+                    mapK succ $ mkMapABC (#!)
+                    mapK succ $ mkMapAEF (#!)
+                )
 
 nestedErrMapV :: IO ()
 nestedErrMapV = assertEqual "Failed to error on mapV'ed dups across blocks"
-                (toDataMap bazErrMapV)
-                (Left ["haskell"])
-
-fooErr :: MapSyntax String Int
-fooErr = do
-  "java" #! 4
-  "haskell" #! 10
-
-barErr :: MapSyntax String Int
-barErr = do
-  "python" #! 6
-  "haskell" #! 12
-
-bazErr :: MapSyntax String Int
-bazErr = do
-  fooErr
-  barErr
-  "extra" #! 1234
-
--- Exercise the partial list merging
-bazErrMapK :: MapSyntax String Int
-bazErrMapK = do
-  mapK (++"a") fooErr
-  mapK (++"a") barErr
-  "extra" #! 1234
-
--- Exercise the partial list merging
--- (This is the test that Heist.SpliceAPI fails)
-bazErrMapV :: MapSyntax String Int
-bazErrMapV = do
-  fooErr
-  mapV (+1) barErr
-  "extra" #! 1234
+                (Left ['A'])
+                (toDataMap $ do
+                    mapV succ $ mkMapABC (#!)
+                    mapV succ $ mkMapAEF (#!)
+                    )
 
 nestedOver :: IO ()
 nestedOver = assertEqual "Failed to overwrite dup entries across blocks"
-             (toDataMap bazOver)
              (Right $ M.fromList
-              [("c",6),("haskell",12),("java",4),("extra",1234)])
+              [('A',100),('B',2),('C',3),('E',200),('F',300)])
+             (toDataMap $ do
+                 mkMapABC (##)
+                 mkMapAEF (##)
+             )
 
-fooOver :: MapSyntax String Int
-fooOver = do
-  "java" ## 4
-  "haskell" ## 10
+nestedOverMapK :: IO ()
+nestedOverMapK = assertEqual "Failed to mapK in nested blocks"
+                 (Right $ M.fromList
+                  [('A',100),('E',200),('F',300),('C',10),('D',20),('B',2)])
+                 (toDataMap $ do
+                     mkMapABC (##)
+                     mapK pred $ mkMapDEF (##)
+                     mkMapAEF (##)
+                 )
 
-barOver :: MapSyntax String Int
-barOver = do
-  "c"  ## 6
-  "haskell" ## 12
+nestedOverMapV :: IO ()
+nestedOverMapV = assertEqual "Failed to mapV in nested blocks"
+                 (Right $ M.fromList
+                  [('A',99),('B',2),('C',3),('E',199),('F',299)])
+                 (toDataMap $ do
+                     mkMapABC (##)
+                     mapV pred $ mkMapAEF (##)
+                 )
 
-bazOver :: MapSyntax String Int
-bazOver = do
-  fooOver
-  barOver
-  "extra" ## 1234
+nestedIgnoreMix :: IO ()
+nestedIgnoreMix = assertEqual "Failed to mapK/mapV in 'Ignore' do blocks"
+                 (Right $ M.fromList
+                  [('B',0),('C',1),('D',2),('E',31),('@',101)])
+                 (toDataMap $ do
+                     mapV pred . mapK succ $ mkMapABC (#?)
+                     mapV succ . mapK pred $ mkMapDEF (#?)
+                     mapK pred . mapV succ $ mkMapAEF (#?)
+                 )
+
+nestedComplex :: IO ()
+nestedComplex = assertEqual "Failed a mix of dup strategies in nested block"
+                (Right $ M.fromList
+                  [('@',1),('A',2),('B',1000),('C',1000),('D',10),('E',20),('F',30),('G',300),('H',199),('I',299)])
+                (toDataMap $ do
+                    mapK succ . mapK succ $ mkMapABC (##)
+                    mapK succ . mapK succ . mapK succ . mapV pred $
+                      mkMapAEF (#?)                 
+                    mapK succ ((mapV (const 1000) $ mkMapABC (##)) >>
+                               mkMapAEF (#?))                 
+                    mkMapDEF (##)                    
+                    mapK pred $ mkMapABC (#?)                 
+                )
+
+nestedComplexErr :: IO ()
+nestedComplexErr = assertEqual
+                   "Failed to detect dup in complex nested block"
+                   (Left ['B'])
+                   (toDataMap $ do
+                       mapK succ . mapK succ $ mkMapABC (##)
+                       mapK succ . mapK succ . mapK succ . mapV pred $
+                         mkMapAEF (#?)                 
+                       mapK succ ((mapV (const 1000) $ mkMapABC (##)) >>
+                                  mkMapAEF (#?))
+                       mapK pred $ mkMapABC (#!)
+                       mkMapDEF (##)                    
+                       mapK pred $ mkMapABC (#?)
+                   )
 
 
+------------------------------------------------------------------------------
+-- |Monoid Laws
+prop_leftId :: ArbMapSyntax String Int -> Bool
+prop_leftId a = toDataMap (mempty <> m) == toDataMap m
+  where m = unArbSyntax a
+
+prop_rightId :: ArbMapSyntax String Int -> Bool
+prop_rightId a = toDataMap (m <> mempty) == toDataMap m
+  where m = unArbSyntax a
+
+prop_assoc :: ArbMapSyntax String Int
+              -> ArbMapSyntax String Int
+              -> ArbMapSyntax String Int
+              -> Bool
+prop_assoc a' b' c' = toDataMap ((a <> b) <> c) == toDataMap (a <> (b <> c))
+  where a = unArbSyntax a'
+        b = unArbSyntax b'
+        c = unArbSyntax c'

@@ -29,12 +29,12 @@ module Data.Map.Syntax
   -- * Core API
     MapSyntaxM
   , MapSyntax
+  , runMap
   , (##)
   , (#!)
   , (#?)
   , mapK
   , mapV
-  , runMap
   , runMapSyntax
   , runMapSyntax'
 

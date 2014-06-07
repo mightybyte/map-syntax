@@ -25,24 +25,30 @@ Here's an example:
 -}
 
 module Data.Map.Syntax
-  ( DupStrat(..)
-  , ItemRep(..)
-  , MapSyntaxM
+  (
+  -- * Core API
+    MapSyntaxM
   , MapSyntax
-  , add
-  , add'
   , (##)
   , (#!)
   , (#?)
-  , runMapSyntax
   , mapK
   , mapV
+  , runMap
+  , runMapSyntax
+  , runMapSyntax'
+
+  -- * Lower level functions
+  , DupStrat(..)
+  , ItemRep(..)
+  , add
   ) where
 
 
 ------------------------------------------------------------------------------
 import           Control.Applicative
 import           Control.Monad.State
+import qualified Data.Map            as M
 import           Data.Monoid
 ------------------------------------------------------------------------------
 
@@ -72,8 +78,6 @@ newtype MapSyntaxM k v a = MapSyntaxM { unMapSyntax :: State (MapRep k v) a }
 
 
 ------------------------------------------------------------------------------
--- | Monoid instance does a union of the two maps with the second map
--- overwriting any duplicates.
 instance Monoid (MapSyntax k v) where
   mempty = return $! ()
   mappend = (>>)
@@ -85,6 +89,7 @@ type MapSyntax k v = MapSyntaxM k v ()
 
 
 ------------------------------------------------------------------------------
+-- | Low level add function for adding a specific DupStrat, key, and value.
 add :: DupStrat -> k -> v -> MapSyntax k v
 add strat k v = add' [ItemRep strat k v]
 
@@ -103,19 +108,27 @@ infixr 0 ##
 
 
 ------------------------------------------------------------------------------
--- | Tries to add an entry, but if the key already exists, then it throws an
--- error message.  This may be useful if name collisions are bad and you want
--- to crash when they occur.
+-- | Tries to add an entry, but if the key already exists, then 'runMap' will
+-- return a Left with the list of offending keys.  This may be useful if name
+-- collisions are bad and you want to know when they occur.
 (#!) :: k -> v -> MapSyntax k v
 (#!) = add Error
 infixr 0 #!
 
 
 ------------------------------------------------------------------------------
--- | Inserts into the map only if the key does not already exist.
+-- | Inserts into the map only if the key does not already exist.  If the key
+-- does exist, it silently continues without overwriting or generating an
+-- error indication.
 (#?) :: k -> v -> MapSyntax k v
 (#?) = add Ignore
 infixr 0 #?
+
+
+------------------------------------------------------------------------------
+-- | Runs the MapSyntaxM monad to generate a map.
+runMap :: Ord k => MapSyntaxM k v a -> Either [k] (M.Map k v)
+runMap = runMapSyntax M.lookup M.insert
 
 
 ------------------------------------------------------------------------------
@@ -128,7 +141,30 @@ runMapSyntax
     -- ^ Function to force-insert a key-value pair into the map
     -> MapSyntaxM k v a
     -> Either [k] map
-runMapSyntax lookupEntry forceIns ms =
+runMapSyntax = runMapSyntax' (\_ _ _ -> Nothing)
+
+
+------------------------------------------------------------------------------
+-- | Runs the MapSyntaxM monad to generate a map.  This function gives you the
+-- full power of insertWith when duplicate keys are encountered.
+--
+-- Example:
+--
+-- > runMapSyntax' (\k new_val old_val -> Just $ old_val ++ new_val)
+runMapSyntax'
+    :: (Monoid map)
+    => (k -> v -> v -> Maybe v)
+    -- ^ Function to handle duplicate key insertion, similar to the first
+    -- argument to insertWith.  If this function returns Nothing, then this is
+    -- interpreted as an error.  If it is a Just, then the resulting value
+    -- will be inserted into the map.
+    -> (k -> map -> Maybe v)
+    -- ^ Function that gets a key's value
+    -> (k -> v -> map -> map)
+    -- ^ Function to force-insert a key-value pair into the map
+    -> MapSyntaxM k v a
+    -> Either [k] map
+runMapSyntax' dupFunc lookupEntry forceIns ms =
     case res of
       ([],m) -> Right m
       (es,_) -> Left es
@@ -136,14 +172,16 @@ runMapSyntax lookupEntry forceIns ms =
     res = foldl f (mempty, mempty) $ execState (unMapSyntax ms) mempty
     f accum@(es,m) ir@ItemRep{..} =
       case lookupEntry irKey m of
-        Just v1 -> replace accum ir
+        Just v1 -> replace accum ir v1
         Nothing -> (es, forceIns irKey irVal m)
 
-    replace (es,m) ir = --ItemRep{..} =
+    replace (es,m) ir v1 =
       case irStrat ir of
         Replace -> (es, forceIns (irKey ir) (irVal ir) m)
         Ignore -> (es, m)
-        Error -> (es ++ [irKey ir], m)
+        Error -> maybe (es ++ [irKey ir], m)
+                       (\v -> (es, forceIns (irKey ir) v m)) $
+                       dupFunc (irKey ir) (irVal ir) v1
 
 
 ------------------------------------------------------------------------------

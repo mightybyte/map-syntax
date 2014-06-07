@@ -9,13 +9,9 @@ import qualified Data.Map                       as M
 import qualified Data.Set                       as Set
 import           Test.QuickCheck                (Arbitrary (arbitrary))
 import           Test.QuickCheck.Gen            (listOf, elements)
-
-import           Data.Map.Syntax
-
-
 ------------------------------------------------------------------------------
-toDataMap :: (Show k, Ord k) => MapSyntax k v -> Either [k] (M.Map k v)
-toDataMap = runMapSyntax M.lookup M.insert
+import           Data.Map.Syntax
+------------------------------------------------------------------------------
 
 
 ------------------------------------------------------------------------------
@@ -39,7 +35,7 @@ instance (Arbitrary a, Arbitrary b) => Arbitrary (ArbMapSyntax a b) where
 ------------------------------------------------------------------------------
 -- |An (invalid) show instance - to have something for QuickCheck to print
 instance (Show a, Ord a, Show b) => Show (ArbMapSyntax a b) where
-  show m = "<MapSyntax> state " ++ show (toDataMap . unArbSyntax $ m)
+  show m = "<MapSyntax> state " ++ show (runMap . unArbSyntax $ m)
 
 
 ------------------------------------------------------------------------------

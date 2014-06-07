@@ -75,7 +75,7 @@ newtype MapSyntaxM k v a = MapSyntaxM { unMapSyntax :: State (MapRep k v) a }
 -- | Monoid instance does a union of the two maps with the second map
 -- overwriting any duplicates.
 instance Monoid (MapSyntax k v) where
-  mempty = return ()
+  mempty = return $! ()
   mappend = (>>)
 
 
@@ -139,11 +139,11 @@ runMapSyntax lookupEntry forceIns ms =
         Just v1 -> replace accum ir
         Nothing -> (es, forceIns irKey irVal m)
 
-    replace (es,m) ItemRep{..} =
-      case irStrat of
-        Replace -> (es, forceIns irKey irVal m)
+    replace (es,m) ir = --ItemRep{..} =
+      case irStrat ir of
+        Replace -> (es, forceIns (irKey ir) (irVal ir) m)
         Ignore -> (es, m)
-        Error -> (es ++ [irKey], m)
+        Error -> (es ++ [irKey ir], m)
 
 
 ------------------------------------------------------------------------------

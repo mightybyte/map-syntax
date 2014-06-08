@@ -57,6 +57,16 @@ import           Data.Monoid
 -- | Strategy to use for duplicates
 data DupStrat = Replace | Ignore | Error
 
+{-
+
+Note: We don't use this seemingly more general formulation:
+
+type DupStrat k v = k -> v -> v -> Either k v
+
+...because it is contravariant in k and v and makes it impossible to implement
+mapK and mapV.
+
+-}
 
 ------------------------------------------------------------------------------
 -- | Representation of an indivdual item in a map

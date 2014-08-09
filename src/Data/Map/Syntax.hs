@@ -41,7 +41,7 @@ module Data.Map.Syntax
   -- * Lower level functions
   , DupStrat(..)
   , ItemRep(..)
-  , add
+  , addStrat
   ) where
 
 
@@ -100,20 +100,20 @@ type MapSyntax k v = MapSyntaxM k v ()
 
 ------------------------------------------------------------------------------
 -- | Low level add function for adding a specific DupStrat, key, and value.
-add :: DupStrat -> k -> v -> MapSyntax k v
-add strat k v = add' [ItemRep strat k v]
+addStrat :: DupStrat -> k -> v -> MapSyntax k v
+addStrat strat k v = addStrat' [ItemRep strat k v]
 
 
 ------------------------------------------------------------------------------
-add' :: [ItemRep k v] -> MapSyntax k v
-add' irs = MapSyntaxM $ modify (++ irs)
+addStrat' :: [ItemRep k v] -> MapSyntax k v
+addStrat' irs = MapSyntaxM $ modify (++ irs)
 
 
 ------------------------------------------------------------------------------
 -- | Forces an entry to be added.  If the key already exists, its value is
 -- overwritten.
 (##) :: k -> v -> MapSyntax k v
-(##) = add Replace
+(##) = addStrat Replace
 infixr 0 ##
 
 
@@ -122,7 +122,7 @@ infixr 0 ##
 -- return a Left with the list of offending keys.  This may be useful if name
 -- collisions are bad and you want to know when they occur.
 (#!) :: k -> v -> MapSyntax k v
-(#!) = add Error
+(#!) = addStrat Error
 infixr 0 #!
 
 
@@ -131,7 +131,7 @@ infixr 0 #!
 -- does exist, it silently continues without overwriting or generating an
 -- error indication.
 (#?) :: k -> v -> MapSyntax k v
-(#?) = add Ignore
+(#?) = addStrat Ignore
 infixr 0 #?
 
 
@@ -202,7 +202,7 @@ execMapSyntax ms = execState (unMapSyntax ms) mempty
 ------------------------------------------------------------------------------
 -- | Maps a function over all the keys.
 mapK :: (k1 -> k2) -> MapSyntaxM k1 v a -> MapSyntax k2 v
-mapK f ms = add' items
+mapK f ms = addStrat' items
   where
     items = map (\ir -> ir { irKey = f (irKey ir) }) $ execMapSyntax ms
 
@@ -210,6 +210,6 @@ mapK f ms = add' items
 ------------------------------------------------------------------------------
 -- | Maps a function over all the values.
 mapV :: (v1 -> v2) -> MapSyntaxM k v1 a -> MapSyntax k v2
-mapV f ms = add' items
+mapV f ms = addStrat' items
   where
     items = map (\ir -> ir { irVal = f (irVal ir) }) $ execMapSyntax ms

@@ -7,7 +7,7 @@ module Data.Map.Syntax.Tests where
 import qualified Data.List as L
 import           Data.Function (on)
 import qualified Data.Map as M
-import           Data.Monoid (mempty,(<>))
+import           Data.Monoid (mempty)
 import           Test.Framework (Test)
 import           Test.Framework.Providers.HUnit (testCase)
 import           Test.Framework.Providers.QuickCheck2 (testProperty)
@@ -62,7 +62,7 @@ dupFunc = assertEqual "Failed use dupFunc"
             :: (String,String)])
           (runMapSyntax' f M.lookup M.insert $ mkDupMap (#!))
   where
-    f k v v1 = Just (k <> v1 <> v)
+    f k v v1 = Just (k `mappend` v1 `mappend` v)
 
 mkDupMap :: (String -> String -> MapSyntax String String)
             -> MapSyntax String String
@@ -203,18 +203,20 @@ nestedComplexErr = assertEqual
 ------------------------------------------------------------------------------
 -- |Monoid Laws
 prop_leftId :: ArbMapSyntax String Int -> Bool
-prop_leftId a = runMap (mempty <> m) == runMap m
+prop_leftId a = runMap (mempty `mappend` m) == runMap m
   where m = unArbSyntax a
 
 prop_rightId :: ArbMapSyntax String Int -> Bool
-prop_rightId a = runMap (m <> mempty) == runMap m
+prop_rightId a = runMap (m `mappend` mempty) == runMap m
   where m = unArbSyntax a
 
 prop_assoc :: ArbMapSyntax String Int
               -> ArbMapSyntax String Int
               -> ArbMapSyntax String Int
               -> Bool
-prop_assoc a' b' c' = runMap ((a <> b) <> c) == runMap (a <> (b <> c))
+prop_assoc a' b' c' =
+    runMap ((a `mappend` b) `mappend` c) ==
+    runMap (a `mappend` (b `mappend` c))
   where a = unArbSyntax a'
         b = unArbSyntax b'
         c = unArbSyntax c'

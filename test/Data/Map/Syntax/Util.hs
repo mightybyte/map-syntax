@@ -29,7 +29,7 @@ instance (Arbitrary a, Arbitrary b) => Arbitrary (ArbMapSyntax a b) where
     vs     <- arbitrary
     strats <- listOf $ elements [Replace,Ignore,Error]
     return . ArbMapSyntax $
-      mapM_ (\(s, k, v) -> add s k v) (zip3 strats ks vs)
+      mapM_ (\(s, k, v) -> addStrat s k v) (zip3 strats ks vs)
 
 
 ------------------------------------------------------------------------------

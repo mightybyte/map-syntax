@@ -7,7 +7,7 @@ module Data.Map.Syntax.Tests where
 import qualified Data.List as L
 import           Data.Function (on)
 import qualified Data.Map as M
-import           Data.Monoid (mempty)
+import           Data.Monoid (mempty, mappend)
 import           Test.Framework (Test)
 import           Test.Framework.Providers.HUnit (testCase)
 import           Test.Framework.Providers.QuickCheck2 (testProperty)

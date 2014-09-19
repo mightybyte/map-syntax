@@ -27,8 +27,11 @@ fi
 
 DIR=dist/hpc
 
-rm -Rf $DIR
-mkdir -p $DIR
+MIXDIR=$DIR/mix/testsuite
+OUTDIR=$DIR/html
+
+rm -Rf $OUTDIR
+mkdir -p $OUTDIR
 
 EXCLUDES='Main
 Data.Map.Syntax.Tests
@@ -40,7 +43,7 @@ for m in $EXCLUDES; do
     EXCL="$EXCL --exclude=$m"
 done
 
-hpc markup $EXCL --destdir=$DIR testsuite # >/dev/null 2>&1
+hpc markup $EXCL --hpcdir=$MIXDIR --destdir=$OUTDIR testsuite # >/dev/null 2>&1
 
 rm -f testsuite.tix
 

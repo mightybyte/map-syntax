@@ -78,7 +78,7 @@ data ItemRep k v = ItemRep
 
 
 ------------------------------------------------------------------------------
-type MapRep k v = [ItemRep k v]
+type MapRep k v = [ItemRep k v] -> [ItemRep k v]
 
 
 ------------------------------------------------------------------------------
@@ -106,7 +106,7 @@ addStrat strat k v = addStrat' [ItemRep strat k v]
 
 ------------------------------------------------------------------------------
 addStrat' :: [ItemRep k v] -> MapSyntax k v
-addStrat' irs = MapSyntaxM $ modify (++ irs)
+addStrat' irs = MapSyntaxM $ modify (\ir -> ir . (irs ++))
 
 
 ------------------------------------------------------------------------------
@@ -179,7 +179,7 @@ runMapSyntax' dupFunc lookupEntry forceIns ms =
       ([],m) -> Right m
       (es,_) -> Left es
   where
-    res = foldl f (mempty, mempty) $ execState (unMapSyntax ms) mempty
+    res = foldl f (mempty, mempty) $ execState (unMapSyntax ms) id []
     f accum@(es,m) ir@ItemRep{..} =
       case lookupEntry irKey m of
         Just v1 -> replace accum ir v1
@@ -196,7 +196,7 @@ runMapSyntax' dupFunc lookupEntry forceIns ms =
 
 ------------------------------------------------------------------------------
 execMapSyntax :: MapSyntaxM k v a -> MapRep k v
-execMapSyntax ms = execState (unMapSyntax ms) mempty
+execMapSyntax ms = execState (unMapSyntax ms) id
 
 
 ------------------------------------------------------------------------------
@@ -204,7 +204,7 @@ execMapSyntax ms = execState (unMapSyntax ms) mempty
 mapK :: (k1 -> k2) -> MapSyntaxM k1 v a -> MapSyntax k2 v
 mapK f ms = addStrat' items
   where
-    items = map (\ir -> ir { irKey = f (irKey ir) }) $ execMapSyntax ms
+    items = map (\ir -> ir { irKey = f (irKey ir) }) $ execMapSyntax ms []
 
 
 ------------------------------------------------------------------------------
@@ -212,4 +212,4 @@ mapK f ms = addStrat' items
 mapV :: (v1 -> v2) -> MapSyntaxM k v1 a -> MapSyntax k v2
 mapV f ms = addStrat' items
   where
-    items = map (\ir -> ir { irVal = f (irVal ir) }) $ execMapSyntax ms
+    items = map (\ir -> ir { irVal = f (irVal ir ) }) $ execMapSyntax ms []

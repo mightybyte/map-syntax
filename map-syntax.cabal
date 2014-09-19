@@ -17,7 +17,8 @@ category:       Data Structures
 extra-source-files:
   .ghci,
   LICENSE,
-  README.md
+  README.md,
+  runTestsAndCoverage.sh
 
 
 Library

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -46,10 +47,13 @@ module Data.Map.Syntax
 
 
 ------------------------------------------------------------------------------
-import           Control.Applicative
 import           Control.Monad.State
 import qualified Data.Map            as M
+
+#if !MIN_VERSION_base(4,8,0)
+import           Control.Applicative
 import           Data.Monoid
+#endif
 ------------------------------------------------------------------------------
 
 

@@ -9,7 +9,7 @@ description:
 license:        BSD3
 license-file:   LICENSE
 author:         Doug Beardsley
-maintainer:     Doug Beardsley
+maintainer:     mightybyte@gmail.com
 build-type:     Simple
 cabal-version:  >= 1.10
 category:       Data Structures
@@ -35,12 +35,10 @@ Library
     mtl                        >= 2.0 && < 2.3
 
   if impl(ghc >= 6.12.0)
-    ghc-options: -Wall -fwarn-tabs -funbox-strict-fields -O2
+    ghc-options: -Wall -fwarn-tabs -funbox-strict-fields
                  -fno-warn-unused-do-bind
   else
-    ghc-options: -Wall -fwarn-tabs -funbox-strict-fields -O2
-
-  ghc-prof-options:    -prof -auto-all
+    ghc-options: -Wall -fwarn-tabs -funbox-strict-fields
 
 
 source-repository head
@@ -57,7 +55,7 @@ Test-suite testsuite
   default-language: Haskell2010
   ghc-options: -fhpc
 
-  ghc-options: -Wall -fwarn-tabs -fhpc -O2
+  ghc-options: -Wall -fwarn-tabs
   build-depends:
     base                       >= 4        && < 5,
     containers                 >= 0.3      && < 0.6,
@@ -65,7 +63,5 @@ Test-suite testsuite
     HUnit                      >= 1.2      && < 2,
     mtl                        >= 2.0      && < 2.3,
     QuickCheck                 >= 2.3.0.2  && < 3,
-    test-framework             >= 0.8.0.3  && < 0.9,
-    test-framework-hunit       >= 0.2.7    && < 0.4,
-    test-framework-quickcheck2 >= 0.2.12.1 && < 0.4,
+    hspec                      >= 2.2.3    && < 2.3,
     transformers               >= 0.3      && < 0.6

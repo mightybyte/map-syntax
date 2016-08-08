@@ -8,9 +8,8 @@ import qualified Data.List as L
 import           Data.Function (on)
 import qualified Data.Map as M
 import           Data.Monoid (mempty, mappend)
-import           Test.Framework (Test)
-import           Test.Framework.Providers.HUnit (testCase)
-import           Test.Framework.Providers.QuickCheck2 (testProperty)
+import           Test.Hspec
+import           Test.Hspec.QuickCheck
 import           Test.HUnit (assertEqual)
 
 import           Data.Map.Syntax
@@ -21,24 +20,22 @@ import           Data.Map.Syntax.Util (mkMapABC, mkMapDEF,mkMapAEF,
 
 ------------------------------------------------------------------------------
 -- |Simple tests for not-nested maps
-insTests :: [Test]
-insTests =
-  [testCase "Insert overwrite" overDup
-  ,testCase "Insert over fail" failDup
-  ,testCase "Reject duplicate" skipDup
-  ,testCase "Trying dupFunc" dupFunc
-  ,testProperty "Insert overwrite from list" prop_syntaxMatchesNubOver
-  ,testProperty "Insert conditional from list" prop_syntaxMatchesNubCond
-  ,testProperty "Insert error on dup from list" prop_syntaxMatchesNubErr]
+insTests :: Spec
+insTests = do
+  it "Insert overwrite" overDup
+  it "Insert over fail" failDup
+  it "Reject duplicate" skipDup
+  it "Trying dupFunc" dupFunc
+  prop "Insert overwrite from list" prop_syntaxMatchesNubOver
+  prop "Insert conditional from list" prop_syntaxMatchesNubCond
+  prop "Insert error on dup from list" prop_syntaxMatchesNubErr
 
-monoidLaws :: [Test]
-monoidLaws =
-  [testProperty "Left identity"  prop_leftId
-  ,testProperty "Right identity" prop_rightId
-  ,testProperty "Associativity"  prop_assoc
-  ]
+monoidLaws :: Spec
+monoidLaws = do
+  prop "Left identity"  prop_leftId
+  prop "Right identity" prop_rightId
+  prop "Associativity"  prop_assoc
 
-  
 ------------------------------------------------------------------------------
 -- |Simple tests of ##, #!, #?
 overDup :: IO ()
@@ -81,7 +78,7 @@ prop_syntaxMatchesNubOver pairs = Right revNubMap == (runMap mSyntax)
 
 prop_syntaxMatchesNubCond :: [(String,Int)] -> Bool
 prop_syntaxMatchesNubCond pairs = Right nubMap == (runMap mSyntax)
-  where mSyntax = mapM_ (\(k,v) -> (k #? v)) pairs 
+  where mSyntax = mapM_ (\(k,v) -> (k #? v)) pairs
         nubMap  = M.fromList . L.nubBy ((==) `on` fst) $ pairs
 
 prop_syntaxMatchesNubErr :: [(String,Int)] -> Bool
@@ -98,17 +95,17 @@ prop_syntaxMatchesNubErr pairs =
 
 ------------------------------------------------------------------------------
 -- |Tests for #! when do blocks are nested
-nestingTests :: [Test]
-nestingTests =
-  [testCase "Nested error dups"          nestedErr
-  ,testCase "Nested error dups mapK"     nestedErrMapK
-  ,testCase "Nester error dups mapV"     nestedErrMapV
-  ,testCase "Nested overwrite dups"      nestedOver
-  ,testCase "Nested overwrite dups mapK" nestedOverMapK
-  ,testCase "Nested overwrite dups mapV" nestedOverMapV
-  ,testCase "Nested ignore dups mixed"   nestedIgnoreMix
-  ,testCase "Nested complex pass"        nestedComplex
-  ,testCase "Nested complex error"       nestedComplexErr]
+nestingTests :: Spec
+nestingTests = do
+  it "Nested error dups"          nestedErr
+  it "Nested error dups mapK"     nestedErrMapK
+  it "Nester error dups mapV"     nestedErrMapV
+  it "Nested overwrite dups"      nestedOver
+  it "Nested overwrite dups mapK" nestedOverMapK
+  it "Nested overwrite dups mapV" nestedOverMapV
+  it "Nested ignore dups mixed"   nestedIgnoreMix
+  it "Nested complex pass"        nestedComplex
+  it "Nested complex error"       nestedComplexErr
 
 
 nestedErr :: IO ()
@@ -177,11 +174,11 @@ nestedComplex = assertEqual "Failed a mix of dup strategies in nested block"
                 (runMap $ do
                     mapK succ . mapK succ $ mkMapABC (##)
                     mapK succ . mapK succ . mapK succ . mapV pred $
-                      mkMapAEF (#?)                 
+                      mkMapAEF (#?)
                     mapK succ ((mapV (const 1000) $ mkMapABC (##)) >>
-                               mkMapAEF (#?))                 
-                    mkMapDEF (##)                    
-                    mapK pred $ mkMapABC (#?)                 
+                               mkMapAEF (#?))
+                    mkMapDEF (##)
+                    mapK pred $ mkMapABC (#?)
                 )
 
 nestedComplexErr :: IO ()
@@ -191,11 +188,11 @@ nestedComplexErr = assertEqual
                    (runMap $ do
                        mapK succ . mapK succ $ mkMapABC (##)
                        mapK succ . mapK succ . mapK succ . mapV pred $
-                         mkMapAEF (#?)                 
+                         mkMapAEF (#?)
                        mapK succ ((mapV (const 1000) $ mkMapABC (##)) >>
                                   mkMapAEF (#?))
                        mapK pred $ mkMapABC (#!)
-                       mkMapDEF (##)                    
+                       mkMapDEF (##)
                        mapK pred $ mkMapABC (#?)
                    )
 
@@ -220,3 +217,4 @@ prop_assoc a' b' c' =
   where a = unArbSyntax a'
         b = unArbSyntax b'
         c = unArbSyntax c'
+

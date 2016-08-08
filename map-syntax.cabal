@@ -1,5 +1,5 @@
 name:           map-syntax
-version:        0.2
+version:        0.2.0.1
 synopsis:       Syntax sugar for defining maps
 description:
     Haskell's canonical list of tuples syntax for defining maps is not very

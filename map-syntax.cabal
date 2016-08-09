@@ -19,7 +19,7 @@ extra-source-files:
   .ghci,
   LICENSE,
   README.md,
-  runTestsAndCoverage.sh
+  runCoverage.sh
 
 
 Library

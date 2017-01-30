@@ -18,7 +18,7 @@ while at the same time eliminating the semantic ambiguity of alists.
 
 Here's an example:
 
-> foo :: MapSyntax Text
+> foo :: MapSyntax Text Text
 > foo = do
 >   "firstName" ## "John"
 >   "lastName"  ## "Smith"

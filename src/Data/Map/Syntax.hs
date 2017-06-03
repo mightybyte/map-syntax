@@ -52,8 +52,8 @@ import qualified Data.Map            as M
 
 #if !MIN_VERSION_base(4,8,0)
 import           Control.Applicative
-import           Data.Monoid
 #endif
+import           Data.Semigroup
 ------------------------------------------------------------------------------
 
 
@@ -92,10 +92,13 @@ newtype MapSyntaxM k v a = MapSyntaxM { unMapSyntax :: State (MapRep k v) a }
 
 
 ------------------------------------------------------------------------------
-instance Monoid (MapSyntax k v) where
-  mempty = return $! ()
-  mappend = (>>)
 
+instance Semigroup (MapSyntax k v) where
+  (<>) = (>>)
+
+instance Monoid (MapSyntax k v) where
+  mempty = pure $! ()
+  mappend = (<>)
 
 ------------------------------------------------------------------------------
 -- | Convenient type alias that will probably be used most of the time.

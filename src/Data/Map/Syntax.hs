@@ -53,7 +53,9 @@ import qualified Data.Map            as M
 #if !MIN_VERSION_base(4,8,0)
 import           Control.Applicative
 #endif
+#if !MIN_VERSION_base(4,11,0)
 import           Data.Semigroup
+#endif
 ------------------------------------------------------------------------------
 
 
@@ -98,7 +100,9 @@ instance Semigroup (MapSyntax k v) where
 
 instance Monoid (MapSyntax k v) where
   mempty = pure $! ()
+#if !MIN_VERSION_base(4,11,0)
   mappend = (<>)
+#endif
 
 ------------------------------------------------------------------------------
 -- | Convenient type alias that will probably be used most of the time.

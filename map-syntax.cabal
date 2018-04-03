@@ -13,7 +13,15 @@ maintainer:     mightybyte@gmail.com
 build-type:     Simple
 cabal-version:  >= 1.10
 category:       Data Structures
-Tested-With:    GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.2, GHC == 8.0.1
+
+Tested-With:
+  GHC == 7.4.2,
+  GHC == 7.6.3,
+  GHC == 7.8.4,
+  GHC == 7.10.2,
+  GHC == 8.0.1,
+  GHC == 8.2.1,
+  GHC == 8.4.1
 
 extra-source-files:
   .ghci,
@@ -29,7 +37,7 @@ Library
     Data.Map.Syntax
 
   build-depends:
-    base                       >= 4.3 && < 5,
+    base                       >= 4.3 && < 4.12,
     containers                 >= 0.3 && < 0.6,
     mtl                        >= 2.0 && < 2.3
 
@@ -63,11 +71,11 @@ Test-suite testsuite
     build-depends: semigroups == 0.18.*
 
   build-depends:
-    base                       >= 4.3      && < 5,
-    containers                 >= 0.3      && < 0.6,
+    base,
+    containers,
     deepseq                    >= 1.3      && < 2,
     HUnit                      >= 1.2      && < 2,
-    mtl                        >= 2.0      && < 2.3,
+    mtl,
     QuickCheck                 >= 2.3.0.2  && < 3,
     hspec                      >= 2.2.3    && < 2.5,
     transformers               >= 0.3      && < 0.6

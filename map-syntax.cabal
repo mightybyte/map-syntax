@@ -78,5 +78,5 @@ Test-suite testsuite
     HUnit                      >= 1.2      && < 2,
     mtl,
     QuickCheck                 >= 2.3.0.2  && < 3,
-    hspec                      >= 2.2.3    && < 2.6,
+    hspec                      >= 2.2.3    && < 2.7,
     transformers               >= 0.3      && < 0.6

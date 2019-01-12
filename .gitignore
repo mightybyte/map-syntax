@@ -5,3 +5,4 @@ dist-newstyle/
 *.o
 *.swp
 cabal.sandbox.config
+.ghc.environment*

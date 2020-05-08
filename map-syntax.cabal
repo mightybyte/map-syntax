@@ -38,7 +38,7 @@ Library
     Data.Map.Syntax
 
   build-depends:
-    base                       >= 4.3 && < 4.14,
+    base                       >= 4.3 && < 4.15,
     containers                 >= 0.3 && < 0.7,
     mtl                        >= 2.0 && < 2.3
 
